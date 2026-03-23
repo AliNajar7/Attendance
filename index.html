@@ -23,23 +23,25 @@
 <div class="container">
     <h2>تسجيل الحضور</h2>
     
-    <div id="msg" class="status-box">يجب التواجد داخل القاعة لتتمكن من التسجيل</div>
+    <div id="msg" class="status-box">اضغط للتحقق من وجودك في نطاق القاعة</div>
 
-    <button id="checkBtn" onclick="getLocation()">التحقق من الموقع (GPS)</button>
+    <button id="checkBtn" onclick="getLocation()">1. التحقق من الموقع (GPS)</button>
 
     <div id="attendanceForm" style="display: none;">
+        <hr>
+        <p style="font-size: 0.8rem; color: #666;">تم التحقق من موقعك بنجاح، أدخل بياناتك:</p>
         <input type="number" id="nationalID" placeholder="أدخل الرقم القومي (14 رقم)">
-        <button id="submitBtn" onclick="submitAttendance()">إرسال البيانات</button>
+        <button id="submitBtn" onclick="submitAttendance()">2. تسجيل الحضور الآن</button>
     </div>
 </div>
 
 <script>
     // ==========================================
-    // إعدادات التحكم (عدل هنا فقط)
+    // إعدادات التحكم (ضع إحداثيات منزلك هنا للتجربة)
     // ==========================================
-    const TARGET_LAT = 26.161405; // خط العرض (ضع إحداثياتك الحالية للتجربة)
-    const TARGET_LON = 32.714271; // خط الطول (ضع إحداثياتك الحالية للتجربة)
-    const RADIUS_METERS = 50;     // نصف قطر القاعة المسموح به بالمتر
+    const TARGET_LAT = 26.161405; // خط العرض
+    const TARGET_LON = 32.714271; // خط الطول
+    const RADIUS_METERS = 100;    // المسافة المسموح بها بالمتر (زدناها لـ 100 للتجربة الأولى)
     // ==========================================
 
     const msg = document.getElementById('msg');
@@ -49,7 +51,7 @@
 
     function getLocation() {
         if (navigator.geolocation) {
-            msg.innerText = "جاري تحديد موقعك بدقة...";
+            msg.innerText = "جاري تحديد موقعك...";
             navigator.geolocation.getCurrentPosition(processPosition, handleError, {
                 enableHighAccuracy: true,
                 timeout: 10000,
@@ -64,25 +66,26 @@
         const uLat = position.coords.latitude;
         const uLon = position.coords.longitude;
         
-        // سطر مؤقت لإظهار إحداثياتك الحالية في رسالة تنبيه
+        // رسالة تظهر لك إحداثياتك الحالية لتنسخها وتضعها في الكود إذا كنت بعيداً
         alert("إحداثياتك الحالية هي:\nLat: " + uLat + "\nLon: " + uLon);
         
         const distance = calculateDistance(uLat, uLon, TARGET_LAT, TARGET_LON);
         
         if (distance <= RADIUS_METERS) {
-            msg.innerText = "تم التحقق! أنت داخل نطاق القاعة.";
+            msg.innerText = "تم التحقق! أنت داخل النطاق المسموح.";
             msg.className = "status-box success";
             checkBtn.style.display = "none";
             form.style.display = "block";
             submitBtn.style.display = "block";
         } else {
-            msg.innerText = `عذراً، أنت بعيد عن القاعة بحوالي ${Math.round(distance)} متر.`;
+            msg.innerText = `عذراً، أنت بعيد عن الموقع بمسافة ${Math.round(distance)} متر.`;
             msg.className = "status-box error";
         }
     }
 
+    // معادلة حساب المسافة بدقة بالمتر
     function calculateDistance(lat1, lon1, lat2, lon2) {
-        const R = 6371e3; // قطر الأرض بالمتر
+        const R = 6371e3; 
         const phi1 = lat1 * Math.PI/180;
         const phi2 = lat2 * Math.PI/180;
         const dPhi = (lat2-lat1) * Math.PI/180;
@@ -93,23 +96,26 @@
                   Math.sin(dLambda/2) * Math.sin(dLambda/2);
         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 
-        return R * c; // المسافة بالمتر
+        return R * c; 
     }
 
     function handleError(error) {
         msg.className = "status-box error";
         switch(error.code) {
-            case error.PERMISSION_DENIED: msg.innerText = "يجب السماح بالوصول للموقع لتسجيل الحضور."; break;
-            default: msg.innerText = "حدث خطأ في تحديد الموقع، حاول مجدداً."; break;
+            case error.PERMISSION_DENIED: msg.innerText = "يرجى السماح بالوصول للموقع (GPS) من إعدادات المتصفح."; break;
+            case error.POSITION_UNAVAILABLE: msg.innerText = "معلومات الموقع غير متوفرة حالياً."; break;
+            case error.TIMEOUT: msg.innerText = "انتهت مهلة طلب الموقع، حاول مرة أخرى."; break;
+            default: msg.innerText = "حدث خطأ غير معروف."; break;
         }
     }
 
     function submitAttendance() {
         const id = document.getElementById('nationalID').value;
         if (id.length === 14) {
-            alert("تم استلام الرقم القومي: " + id + "\nالخطوة القادمة هي الربط بـ Firebase.");
+            alert("تم إرسال الرقم القومي بنجاح: " + id);
+            // هنا سيتم إضافة كود Firebase لاحقاً
         } else {
-            alert("يرجى إدخال رقم قومي صحيح (14 رقم).");
+            alert("خطأ: الرقم القومي يجب أن يكون 14 رقماً.");
         }
     }
 </script>
