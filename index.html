@@ -22,53 +22,62 @@
 
 <div class="container">
     <h2>تسجيل الحضور</h2>
-    
     <div id="msg" class="status-box">اضغط للتحقق من وجودك في نطاق القاعة</div>
-
-    <button id="checkBtn" onclick="getLocation()">1. التحقق من الموقع (GPS)</button>
+    <button id="checkBtn">1. التحقق من الموقع (GPS)</button>
 
     <div id="attendanceForm" style="display: none;">
         <hr>
-        <p style="font-size: 0.8rem; color: #666;">تم التحقق من موقعك بنجاح، أدخل بياناتك:</p>
+        <p style="font-size: 0.8rem; color: #666;">تم التحقق من موقعك، أدخل بياناتك:</p>
         <input type="number" id="nationalID" placeholder="أدخل الرقم القومي (14 رقم)">
-        <button id="submitBtn" onclick="submitAttendance()">2. تسجيل الحضور الآن</button>
+        <button id="submitBtn">2. تسجيل الحضور الآن</button>
     </div>
 </div>
 
-<script>
-    // ==========================================
-    // إعدادات التحكم (ضع إحداثيات منزلك هنا للتجربة)
-    // ==========================================
-    const TARGET_LAT = 26.7307244; // خط العرض
-    const TARGET_LON = 33.9358019; // خط الطول
-    const RADIUS_METERS = 100;    // المسافة المسموح بها بالمتر (زدناها لـ 100 للتجربة الأولى)
-    // ==========================================
+<script type="module">
+    // استيراد مكتبات Firebase
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    // إعدادات مشروعك التي أرسلتها
+    const firebaseConfig = {
+        apiKey: "AIzaSyDop8Wf6OwdJIIJL5cEav23gsDRPbornKY",
+        authDomain: "attendancesystem-cc4ee.firebaseapp.com",
+        projectId: "attendancesystem-cc4ee",
+        storageBucket: "attendancesystem-cc4ee.firebasestorage.app",
+        messagingSenderId: "186115847052",
+        appId: "1:186115847052:web:daf80d00c3c2ef2a49dca9",
+        measurementId: "G-JNQ5DW74MK"
+    };
+
+    // تشغيل Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // إعدادات الموقع الجغرافي (إحداثياتك الحالية)
+    const TARGET_LAT = 26.7307244; 
+    const TARGET_LON = 33.9358019; 
+    const RADIUS_METERS = 100;
 
     const msg = document.getElementById('msg');
     const checkBtn = document.getElementById('checkBtn');
     const form = document.getElementById('attendanceForm');
     const submitBtn = document.getElementById('submitBtn');
 
-    function getLocation() {
+    // وظيفة تحديد الموقع
+    checkBtn.addEventListener('click', () => {
         if (navigator.geolocation) {
             msg.innerText = "جاري تحديد موقعك...";
             navigator.geolocation.getCurrentPosition(processPosition, handleError, {
-                enableHighAccuracy: true,
-                timeout: 10000,
-                maximumAge: 0
+                enableHighAccuracy: true
             });
         } else {
             msg.innerText = "متصفحك لا يدعم تحديد الموقع.";
         }
-    }
+    });
 
     function processPosition(position) {
         const uLat = position.coords.latitude;
         const uLon = position.coords.longitude;
-        
-        // رسالة تظهر لك إحداثياتك الحالية لتنسخها وتضعها في الكود إذا كنت بعيداً
-        alert("إحداثياتك الحالية هي:\nLat: " + uLat + "\nLon: " + uLon);
-        
         const distance = calculateDistance(uLat, uLon, TARGET_LAT, TARGET_LON);
         
         if (distance <= RADIUS_METERS) {
@@ -78,47 +87,52 @@
             form.style.display = "block";
             submitBtn.style.display = "block";
         } else {
-            msg.innerText = `عذراً، أنت بعيد عن الموقع بمسافة ${Math.round(distance)} متر.`;
+            msg.innerText = `عذراً، أنت بعيد بمسافة ${Math.round(distance)} متر.`;
             msg.className = "status-box error";
         }
     }
 
-    // معادلة حساب المسافة بدقة بالمتر
     function calculateDistance(lat1, lon1, lat2, lon2) {
         const R = 6371e3; 
-        const phi1 = lat1 * Math.PI/180;
-        const phi2 = lat2 * Math.PI/180;
         const dPhi = (lat2-lat1) * Math.PI/180;
         const dLambda = (lon2-lon1) * Math.PI/180;
-
         const a = Math.sin(dPhi/2) * Math.sin(dPhi/2) +
-                  Math.cos(phi1) * Math.cos(phi2) *
+                  Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) *
                   Math.sin(dLambda/2) * Math.sin(dLambda/2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-
-        return R * c; 
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     }
 
-    function handleError(error) {
-        msg.className = "status-box error";
-        switch(error.code) {
-            case error.PERMISSION_DENIED: msg.innerText = "يرجى السماح بالوصول للموقع (GPS) من إعدادات المتصفح."; break;
-            case error.POSITION_UNAVAILABLE: msg.innerText = "معلومات الموقع غير متوفرة حالياً."; break;
-            case error.TIMEOUT: msg.innerText = "انتهت مهلة طلب الموقع، حاول مرة أخرى."; break;
-            default: msg.innerText = "حدث خطأ غير معروف."; break;
-        }
-    }
+    function handleError() { msg.innerText = "يرجى تفعيل الـ GPS والسماح للمتصفح بالوصول لموقعك."; }
 
-    function submitAttendance() {
-        const id = document.getElementById('nationalID').value;
-        if (id.length === 14) {
-            alert("تم إرسال الرقم القومي بنجاح: " + id);
-            // هنا سيتم إضافة كود Firebase لاحقاً
-        } else {
+    // وظيفة إرسال الحضور لقاعدة البيانات
+    submitBtn.addEventListener('click', async () => {
+        const idValue = document.getElementById('nationalID').value;
+        
+        if (idValue.length !== 14) {
             alert("خطأ: الرقم القومي يجب أن يكون 14 رقماً.");
+            return;
         }
-    }
-</script>
 
+        try {
+            submitBtn.disabled = true;
+            submitBtn.innerText = "جاري الإرسال...";
+            
+            // إرسال البيانات لمجموعة تسمى "Attendance"
+            await addDoc(collection(db, "Attendance"), {
+                nationalID: idValue,
+                timestamp: serverTimestamp(),
+                location_status: "Verified_In_Range"
+            });
+
+            alert("تم تسجيل حضورك بنجاح يا دكتور!");
+            location.reload(); // إعادة تحميل الصفحة
+        } catch (e) {
+            console.error("Error adding document: ", e);
+            alert("حدث خطأ أثناء الإرسال، تأكد من إعدادات Firestore (Rules).");
+            submitBtn.disabled = false;
+            submitBtn.innerText = "حاول مرة أخرى";
+        }
+    });
+</script>
 </body>
 </html>
