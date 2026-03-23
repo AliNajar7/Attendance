@@ -3,62 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام الحضور الذكي - دكتور المحاضرة</title>
+    <title>نظام الحضور الذكي | دكتور المحاضرة</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        :root { --primary: #2c3e50; --success: #27ae60; --danger: #e74c3c; --accent: #3498db; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 10px; }
-        .container { background: white; padding: 2rem; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); width: 100%; max-width: 500px; text-align: center; border-top: 5px solid var(--primary); }
-        h2 { color: var(--primary); margin-bottom: 0.5rem; }
-        .status-box { padding: 15px; border-radius: 12px; margin-bottom: 1.5rem; font-weight: bold; border: 1px solid #ddd; }
-        input { width: 100%; padding: 14px; margin: 15px 0; border: 2px solid #eee; border-radius: 10px; box-sizing: border-box; font-size: 1.1rem; text-align: center; }
-        button { width: 100%; padding: 14px; border: none; border-radius: 10px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; }
-        #checkBtn { background-color: var(--primary); color: white; }
-        #submitBtn { background-color: var(--success); color: white; display: none; }
+        :root { --primary: #2c3e50; --success: #27ae60; --danger: #e74c3c; --accent: #3498db; --warning: #f39c12; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; }
+        
+        .card { background: white; padding: 2rem; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 500px; text-align: center; border-top: 6px solid var(--primary); }
+        
+        h2 { color: var(--primary); margin-top: 0; }
+        .status-box { padding: 15px; border-radius: 12px; margin-bottom: 1.5rem; font-weight: bold; border: 1px solid #ddd; font-size: 0.95rem; }
+        
+        input[type="number"], input[type="file"] { width: 100%; padding: 14px; margin: 10px 0; border: 2px solid #eee; border-radius: 10px; box-sizing: border-box; font-size: 1.1rem; text-align: center; }
+        
+        button { width: 100%; padding: 14px; border: none; border-radius: 10px; font-size: 1.05rem; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; color: white; }
+        
+        .btn-check { background-color: var(--primary); }
+        .btn-submit { background-color: var(--success); display: none; }
+        .btn-export { background-color: var(--accent); }
+        .btn-clear { background-color: var(--danger); margin-top: 20px; }
+        .btn-upload { background-color: var(--warning); }
+
         .success { color: var(--success); background: #f5fff8; border-color: var(--success); }
         .error { color: var(--danger); background: #fff5f5; border-color: var(--danger); }
-        
-        /* تصميم لوحة التحكم */
-        #adminPanel { display: none; margin-top: 30px; text-align: right; width: 100%; max-width: 800px; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.9rem; }
-        th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
-        th { background-color: var(--primary); color: white; }
-        .export-btn { background-color: #e67e22; color: white; margin-bottom: 10px; }
+
+        /* لوحة التحكم */
+        #adminPanel { display: none; max-width: 800px; width: 100%; }
+        .admin-card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); margin-top: 20px; text-align: right; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; }
+        th, td { border: 1px solid #eee; padding: 12px; text-align: center; font-size: 0.9rem; }
+        th { background: var(--primary); color: white; }
+        tr:nth-child(even) { background: #fafafa; }
+
+        .upload-section { border: 2px dashed #ddd; padding: 15px; margin: 20px 0; border-radius: 10px; }
     </style>
 </head>
 <body>
 
-<div id="mainApp" class="container">
-    <h2>نظام تسجيل الحضور</h2>
-    <div id="msg" class="status-box">يرجى الضغط للتحقق من موقعك بالقاعة</div>
-    <button id="checkBtn">1. التحقق من الموقع (GPS)</button>
+<div id="studentUI" class="card">
+    <h2>تسجيل الحضور</h2>
+    <p style="color: #7f8c8d; font-size: 0.85rem;">جامعة جنوب الوادي - كلية التربية النوعية</p>
+    
+    <div id="msg" class="status-box">يرجى التحقق من موقعك بالقاعة أولاً</div>
+    
+    <button id="checkBtn" class="btn-check">1. التحقق من الموقع (GPS)</button>
 
     <div id="attendanceForm" style="display: none;">
         <input type="number" id="nationalID" placeholder="أدخل الرقم القومي (14 رقم)">
-        <button id="submitBtn">2. تسجيل الحضور الآن</button>
+        <button id="submitBtn" class="btn-submit">2. تسجيل الحضور الآن</button>
     </div>
 </div>
 
 <div id="adminPanel">
-    <h3>لوحة تحكم المحاضر</h3>
-    <button class="export-btn" id="exportBtn">تصدير الكشف إلى Excel</button>
-    <table id="attendanceTable">
-        <thead>
-            <tr>
-                <th>الاسم</th>
-                <th>الرقم القومي</th>
-                <th>وقت الحضور</th>
-            </tr>
-        </thead>
-        <tbody id="tableBody"></tbody>
-    </table>
-    <button onclick="location.reload()" style="background:#95a5a6; color:white;">خروج</button>
+    <div class="admin-card">
+        <h2 style="text-align: center;">لوحة تحكم المحاضر 👨‍🏫</h2>
+        
+        <div class="upload-section">
+            <strong style="display:block; margin-bottom:10px;">📦 رفع كشف الطلاب الجديد (Excel):</strong>
+            <input type="file" id="excelFile" accept=".xlsx, .xls">
+            <button id="uploadBtn" class="btn-upload">بدء الرفع الجماعي للطلاب</button>
+            <small style="color: #666;">* يجب أن يحتوي الملف على عمودين باسم: ID و Name</small>
+        </div>
+
+        <hr>
+
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <strong>📊 سجل الحضور الحالي:</strong>
+            <button id="exportBtn" class="btn-export" style="width: auto; padding: 8px 20px;">تصدير Excel</button>
+        </div>
+
+        <table id="attendanceTable">
+            <thead>
+                <tr>
+                    <th>اسم الطالب</th>
+                    <th>الرقم القومي</th>
+                    <th>التوقيت</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                </tbody>
+        </table>
+
+        <button id="clearAllBtn" class="btn-clear">🗑️ مسح جميع سجلات الحضور الحالية</button>
+        <button onclick="location.reload()" style="background:#95a5a6;">تسجيل الخروج</button>
+    </div>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDoc, getDocs, doc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, getDoc, getDocs, doc, serverTimestamp, query, orderBy, writeBatch, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+    // إعدادات Firebase الخاصة بك
     const firebaseConfig = {
         apiKey: "AIzaSyDop8Wf6OwdJIIJL5cEav23gsDRPbornKY",
         authDomain: "attendancesystem-cc4ee.firebaseapp.com",
@@ -71,39 +106,46 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // --- إعدادات المدير والموقع ---
-    const ADMIN_ID = "29112063100031"; // *** ضع رقمك القومي هنا يا دكتور ***
-    const TARGET_LAT = 26.7307244; 
+    // ==========================================
+    // إعدادات التحكم الهامة (عدل هنا)
+    // ==========================================
+    const ADMIN_ID = "29112063100031"; // *** ضع رقمك القومي هنا لدخول لوحة التحكم ***
+    const TARGET_LAT = 26.7307244;    // إحداثيات القاعة
     const TARGET_LON = 33.9358019; 
-    const RADIUS_METERS = 100;
-    // ----------------------------
+    const RADIUS_METERS = 100;        // المسافة المسموحة
+    // ==========================================
 
     const msg = document.getElementById('msg');
     const checkBtn = document.getElementById('checkBtn');
     const form = document.getElementById('attendanceForm');
     const submitBtn = document.getElementById('submitBtn');
 
+    // 1. التحقق من الموقع
     checkBtn.onclick = () => {
-        navigator.geolocation.getCurrentPosition((pos) => {
-            const dist = calculateDistance(pos.coords.latitude, pos.coords.longitude, TARGET_LAT, TARGET_LON);
-            if (dist <= RADIUS_METERS) {
-                msg.innerText = "تم التحقق من الموقع بنجاح";
-                msg.className = "status-box success";
-                checkBtn.style.display = "none";
-                form.style.display = "block";
-                submitBtn.style.display = "block";
-            } else {
-                msg.innerText = `أنت خارج النطاق بمسافة ${Math.round(dist)} متر`;
-                msg.className = "status-box error";
-            }
-        }, () => alert("يرجى تفعيل الـ GPS"));
+        if (navigator.geolocation) {
+            msg.innerText = "جاري تحديد موقعك...";
+            navigator.geolocation.getCurrentPosition((pos) => {
+                const dist = calculateDistance(pos.coords.latitude, pos.coords.longitude, TARGET_LAT, TARGET_LON);
+                if (dist <= RADIUS_METERS) {
+                    msg.innerText = "تم التحقق من موقعك بنجاح ✅";
+                    msg.className = "status-box success";
+                    checkBtn.style.display = "none";
+                    form.style.display = "block";
+                    submitBtn.style.display = "block";
+                } else {
+                    msg.innerText = `أنت بعيد عن القاعة بمسافة ${Math.round(dist)} متر ❌`;
+                    msg.className = "status-box error";
+                }
+            }, () => alert("يرجى تفعيل الـ GPS في هاتفك"));
+        }
     };
 
+    // 2. تسجيل الحضور أو دخول المدير
     submitBtn.onclick = async () => {
         const idValue = document.getElementById('nationalID').value;
-        if (idValue.length !== 14) return alert("الرقم القومي غير صحيح");
+        if (idValue.length !== 14) return alert("الرقم القومي يجب أن يكون 14 رقماً");
 
-        // إذا كان الداخل هو المدير
+        // حالة دخول المدير
         if (idValue === ADMIN_ID) {
             loadAdminPanel();
             return;
@@ -111,47 +153,94 @@
 
         try {
             submitBtn.disabled = true;
+            submitBtn.innerText = "جاري التحقق...";
+            
             const studentSnap = await getDoc(doc(db, "StudentsList", idValue));
+            
             if (studentSnap.exists()) {
                 await addDoc(collection(db, "Attendance"), {
                     nationalID: idValue,
                     name: studentSnap.data().name,
                     timestamp: serverTimestamp()
                 });
-                alert("تم تسجيل حضورك بنجاح");
+                alert(`تم تسجيل حضورك بنجاح: ${studentSnap.data().name}`);
                 location.reload();
             } else {
-                alert("الرقم غير مسجل في قائمة الطلاب");
+                alert("هذا الرقم غير مسجل في قائمة الطلاب المعتمدة!");
                 submitBtn.disabled = false;
+                submitBtn.innerText = "تسجيل الحضور الآن";
             }
-        } catch (e) { alert("خطأ في الاتصال"); submitBtn.disabled = false; }
+        } catch (e) {
+            alert("حدث خطأ في الاتصال بقاعدة البيانات");
+            submitBtn.disabled = false;
+        }
     };
 
+    // 3. لوحة التحكم (المدير)
     async function loadAdminPanel() {
-        document.getElementById('mainApp').style.display = 'none';
+        document.getElementById('studentUI').style.display = 'none';
         document.getElementById('adminPanel').style.display = 'block';
+        
         const q = query(collection(db, "Attendance"), orderBy("timestamp", "desc"));
-        const querySnapshot = await getDocs(q);
+        const snap = await getDocs(q);
         const tbody = document.getElementById('tableBody');
         tbody.innerHTML = "";
-        querySnapshot.forEach((doc) => {
-            const data = doc.data();
-            const date = data.timestamp ? data.timestamp.toDate().toLocaleString('ar-EG') : 'جاري المعالجة';
-            tbody.innerHTML += `<tr><td>${data.name}</td><td>${data.nationalID}</td><td>${date}</td></tr>`;
+        
+        snap.forEach((doc) => {
+            const d = doc.data();
+            const time = d.timestamp ? d.timestamp.toDate().toLocaleString('ar-EG') : '...';
+            tbody.innerHTML += `<tr><td>${d.name}</td><td>${d.nationalID}</td><td>${time}</td></tr>`;
         });
     }
 
+    // 4. تصدير Excel
     document.getElementById('exportBtn').onclick = () => {
         const table = document.getElementById("attendanceTable");
         const wb = XLSX.utils.table_to_book(table);
-        XLSX.writeFile(wb, "كشف_الحضور.xlsx");
+        XLSX.writeFile(wb, "كشف_حضور_الطلاب.xlsx");
     };
 
+    // 5. مسح جميع السجلات
+    document.getElementById('clearAllBtn').onclick = async () => {
+        if (!confirm("هل أنت متأكد من مسح جميع سجلات الحضور؟")) return;
+        const snap = await getDocs(collection(db, "Attendance"));
+        const batch = writeBatch(db);
+        snap.forEach(d => batch.delete(d.ref));
+        await batch.commit();
+        alert("تم تفريغ السجل بنجاح");
+        loadAdminPanel();
+    };
+
+    // 6. الرفع الجماعي من Excel
+    document.getElementById('uploadBtn').onclick = () => {
+        const file = document.getElementById('excelFile').files[0];
+        if (!file) return alert("اختر ملف Excel أولاً");
+
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, {type: 'array'});
+            const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+            
+            const batch = writeBatch(db);
+            jsonData.forEach(row => {
+                if(row.ID && row.Name) {
+                    const ref = doc(db, "StudentsList", String(row.ID));
+                    batch.set(ref, { name: row.Name });
+                }
+            });
+            await batch.commit();
+            alert(`تم رفع ${jsonData.length} طالب بنجاح!`);
+        };
+        reader.readAsArrayBuffer(file);
+    };
+
+    // معادلة المسافة
     function calculateDistance(lat1, lon1, lat2, lon2) {
         const R = 6371e3;
-        const dPhi = (lat2-lat1) * Math.PI/180;
-        const dLambda = (lon2-lon1) * Math.PI/180;
-        const a = Math.sin(dPhi/2) * Math.sin(dPhi/2) + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLambda/2)*Math.sin(dLambda/2);
+        const dLat = (lat2-lat1)*Math.PI/180;
+        const dLon = (lon2-lon1)*Math.PI/180;
+        const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
         return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     }
 </script>
