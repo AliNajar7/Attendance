@@ -3,42 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام تسجيل الحضور الذكي</title>
+    <title>نظام الحضور الذكي - دكتور المحاضرة</title>
     <style>
-        :root { --primary: #2c3e50; --success: #27ae60; --danger: #e74c3c; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8f9fa; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .container { background: white; padding: 2rem; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 90%; max-width: 400px; text-align: center; }
-        h2 { color: var(--primary); margin-bottom: 1.5rem; }
-        .status-box { padding: 15px; border-radius: 8px; margin-bottom: 1.5rem; font-weight: bold; font-size: 0.9rem; border: 1px solid #eee; }
-        input { width: 100%; padding: 12px; margin: 10px 0; border: 2px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 1rem; text-align: center; }
-        button { width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; }
+        :root { --primary: #2c3e50; --success: #27ae60; --danger: #e74c3c; --accent: #3498db; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .container { background: white; padding: 2.5rem; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); width: 90%; max-width: 450px; text-align: center; border-top: 5px solid var(--primary); }
+        h2 { color: var(--primary); margin-bottom: 0.5rem; font-size: 1.5rem; }
+        p.subtitle { color: #7f8c8d; font-size: 0.9rem; margin-bottom: 2rem; }
+        .status-box { padding: 15px; border-radius: 12px; margin-bottom: 1.5rem; font-weight: bold; font-size: 0.95rem; border: 1px solid #ddd; transition: 0.3s; }
+        input { width: 100%; padding: 14px; margin: 15px 0; border: 2px solid #eee; border-radius: 10px; box-sizing: border-box; font-size: 1.1rem; text-align: center; outline: none; transition: 0.3s; }
+        input:focus { border-color: var(--accent); }
+        button { width: 100%; padding: 14px; border: none; border-radius: 10px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; }
         #checkBtn { background-color: var(--primary); color: white; }
+        #checkBtn:hover { background-color: #34495e; }
         #submitBtn { background-color: var(--success); color: white; display: none; }
-        .error { color: var(--danger); background: #fdf2f2; border-color: var(--danger); }
-        .success { color: var(--success); background: #f2fdf5; border-color: var(--success); }
+        #submitBtn:hover { background-color: #219150; }
+        #submitBtn:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+        .error { color: var(--danger); background: #fff5f5; border-color: var(--danger); }
+        .success { color: var(--success); background: #f5fff8; border-color: var(--success); }
+        .loader { border: 3px solid #f3f3f3; border-top: 3px solid var(--success); border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; margin-left: 10px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>تسجيل الحضور</h2>
-    <div id="msg" class="status-box">اضغط للتحقق من وجودك في نطاق القاعة</div>
+    <h2>نظام تسجيل الحضور</h2>
+    <p class="subtitle">كلية التربية النوعية - جامعة جنوب الوادي</p>
+    
+    <div id="msg" class="status-box">يرجى الضغط للتحقق من موقعك الحالي بالقاعة</div>
+
     <button id="checkBtn">1. التحقق من الموقع (GPS)</button>
 
     <div id="attendanceForm" style="display: none;">
-        <hr>
-        <p style="font-size: 0.8rem; color: #666;">تم التحقق من موقعك، أدخل بياناتك:</p>
-        <input type="number" id="nationalID" placeholder="أدخل الرقم القومي (14 رقم)">
+        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+        <input type="number" id="nationalID" placeholder="أدخل الرقم القومي (14 رقم)" maxlength="14">
         <button id="submitBtn">2. تسجيل الحضور الآن</button>
     </div>
 </div>
 
 <script type="module">
-    // استيراد مكتبات Firebase
+    // استيراد مكتبات Firebase الحديثة
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, getDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    // إعدادات مشروعك التي أرسلتها
+    // إعدادات Firebase الخاصة بك
     const firebaseConfig = {
         apiKey: "AIzaSyDop8Wf6OwdJIIJL5cEav23gsDRPbornKY",
         authDomain: "attendancesystem-cc4ee.firebaseapp.com",
@@ -49,29 +58,31 @@
         measurementId: "G-JNQ5DW74MK"
     };
 
-    // تشغيل Firebase
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // إعدادات الموقع الجغرافي (إحداثياتك الحالية)
+    // --- إعدادات الموقع الجغرافي (التجربة الحالية) ---
     const TARGET_LAT = 26.7307244; 
     const TARGET_LON = 33.9358019; 
-    const RADIUS_METERS = 100;
+    const RADIUS_METERS = 100; // مسموح في نطاق 100 متر للتجربة
+    // ------------------------------------------
 
     const msg = document.getElementById('msg');
     const checkBtn = document.getElementById('checkBtn');
     const form = document.getElementById('attendanceForm');
     const submitBtn = document.getElementById('submitBtn');
 
-    // وظيفة تحديد الموقع
+    // 1. وظيفة تحديد الموقع
     checkBtn.addEventListener('click', () => {
         if (navigator.geolocation) {
-            msg.innerText = "جاري تحديد موقعك...";
+            msg.innerText = "جاري الاتصال بالأقمار الصناعية...";
             navigator.geolocation.getCurrentPosition(processPosition, handleError, {
-                enableHighAccuracy: true
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
             });
         } else {
-            msg.innerText = "متصفحك لا يدعم تحديد الموقع.";
+            msg.innerText = "متصفحك لا يدعم خاصية تحديد الموقع.";
         }
     });
 
@@ -81,14 +92,15 @@
         const distance = calculateDistance(uLat, uLon, TARGET_LAT, TARGET_LON);
         
         if (distance <= RADIUS_METERS) {
-            msg.innerText = "تم التحقق! أنت داخل النطاق المسموح.";
+            msg.innerText = "تم التحقق! أنت متواجد داخل القاعة الآن.";
             msg.className = "status-box success";
             checkBtn.style.display = "none";
             form.style.display = "block";
             submitBtn.style.display = "block";
         } else {
-            msg.innerText = `عذراً، أنت بعيد بمسافة ${Math.round(distance)} متر.`;
+            msg.innerText = `عذراً، أنت خارج النطاق بمسافة ${Math.round(distance)} متر.`;
             msg.className = "status-box error";
+            alert(`موقعك الحالي:\nLat: ${uLat}\nLon: ${uLon}\nقم بنسخ هذه الأرقام إذا أردت تعديل الكود لموقعك الحالي.`);
         }
     }
 
@@ -102,37 +114,54 @@
         return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     }
 
-    function handleError() { msg.innerText = "يرجى تفعيل الـ GPS والسماح للمتصفح بالوصول لموقعك."; }
+    function handleError(error) {
+        msg.className = "status-box error";
+        msg.innerText = "فشل تحديد الموقع. تأكد من تفعيل GPS والسماح للمتصفح.";
+    }
 
-    // وظيفة إرسال الحضور لقاعدة البيانات
+    // 2. وظيفة إرسال الحضور والتحقق من قائمة الطلاب
     submitBtn.addEventListener('click', async () => {
         const idValue = document.getElementById('nationalID').value;
         
         if (idValue.length !== 14) {
-            alert("خطأ: الرقم القومي يجب أن يكون 14 رقماً.");
+            alert("يرجى إدخال الرقم القومي كاملاً (14 رقم).");
             return;
         }
 
         try {
             submitBtn.disabled = true;
-            submitBtn.innerText = "جاري الإرسال...";
+            submitBtn.innerHTML = '<span class="loader"></span> جاري التحقق...';
             
-            // إرسال البيانات لمجموعة تسمى "Attendance"
-            await addDoc(collection(db, "Attendance"), {
-                nationalID: idValue,
-                timestamp: serverTimestamp(),
-                location_status: "Verified_In_Range"
-            });
+            // التحقق من وجود الطالب في مجموعة StudentsList
+            const studentRef = doc(db, "StudentsList", idValue);
+            const studentSnap = await getDoc(studentRef);
 
-            alert("تم تسجيل حضورك بنجاح يا دكتور!");
-            location.reload(); // إعادة تحميل الصفحة
+            if (studentSnap.exists()) {
+                const studentData = studentSnap.data();
+                
+                // إضافة سجل الحضور في مجموعة Attendance
+                await addDoc(collection(db, "Attendance"), {
+                    nationalID: idValue,
+                    name: studentData.name || "طالب مسجل",
+                    timestamp: serverTimestamp(),
+                    status: "حاضر - تم التحقق من الموقع"
+                });
+
+                alert(`تم تسجيل حضورك بنجاح يا ${studentData.name || 'دكتور'}`);
+                location.reload();
+            } else {
+                alert("هذا الرقم القومي غير مسجل في قاعدة بيانات الطلاب!");
+                submitBtn.disabled = false;
+                submitBtn.innerText = "تسجيل الحضور الآن";
+            }
         } catch (e) {
-            console.error("Error adding document: ", e);
-            alert("حدث خطأ أثناء الإرسال، تأكد من إعدادات Firestore (Rules).");
+            console.error(e);
+            alert("حدث خطأ تقني. تأكد من إعدادات Firestore Rules.");
             submitBtn.disabled = false;
-            submitBtn.innerText = "حاول مرة أخرى";
+            submitBtn.innerText = "تسجيل الحضور الآن";
         }
     });
 </script>
+
 </body>
 </html>
