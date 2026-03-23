@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام تسجيل الحضور الذكي</title>
+    <style>
+        :root { --primary: #2c3e50; --success: #27ae60; --danger: #e74c3c; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8f9fa; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .container { background: white; padding: 2rem; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 90%; max-width: 400px; text-align: center; }
+        h2 { color: var(--primary); margin-bottom: 1.5rem; }
+        .status-box { padding: 15px; border-radius: 8px; margin-bottom: 1.5rem; font-weight: bold; font-size: 0.9rem; border: 1px solid #eee; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 2px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 1rem; text-align: center; }
+        button { width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; }
+        #checkBtn { background-color: var(--primary); color: white; }
+        #submitBtn { background-color: var(--success); color: white; display: none; }
+        .error { color: var(--danger); background: #fdf2f2; border-color: var(--danger); }
+        .success { color: var(--success); background: #f2fdf5; border-color: var(--success); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>تسجيل الحضور</h2>
+    
+    <div id="msg" class="status-box">يجب التواجد داخل القاعة لتتمكن من التسجيل</div>
+
+    <button id="checkBtn" onclick="getLocation()">التحقق من الموقع (GPS)</button>
+
+    <div id="attendanceForm" style="display: none;">
+        <input type="number" id="nationalID" placeholder="أدخل الرقم القومي (14 رقم)">
+        <button id="submitBtn" onclick="submitAttendance()">إرسال البيانات</button>
+    </div>
+</div>
+
+<script>
+    // ==========================================
+    // إعدادات التحكم (عدل هنا فقط)
+    // ==========================================
+    const TARGET_LAT = 26.161100; // خط العرض (ضع إحداثياتك الحالية للتجربة)
+    const TARGET_LON = 32.714300; // خط الطول (ضع إحداثياتك الحالية للتجربة)
+    const RADIUS_METERS = 50;     // نصف قطر القاعة المسموح به بالمتر
+    // ==========================================
+
+    const msg = document.getElementById('msg');
+    const checkBtn = document.getElementById('checkBtn');
+    const form = document.getElementById('attendanceForm');
+    const submitBtn = document.getElementById('submitBtn');
+
+    function getLocation() {
+        if (navigator.geolocation) {
+            msg.innerText = "جاري تحديد موقعك بدقة...";
+            navigator.geolocation.getCurrentPosition(processPosition, handleError, {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            });
+        } else {
+            msg.innerText = "متصفحك لا يدعم تحديد الموقع.";
+        }
+    }
+
+    function processPosition(position) {
+        const uLat = position.coords.latitude;
+        const uLon = position.coords.longitude;
+        
+        const distance = calculateDistance(uLat, uLon, TARGET_LAT, TARGET_LON);
+        
+        if (distance <= RADIUS_METERS) {
+            msg.innerText = "تم التحقق! أنت داخل نطاق القاعة.";
+            msg.className = "status-box success";
+            checkBtn.style.display = "none";
+            form.style.display = "block";
+            submitBtn.style.display = "block";
+        } else {
+            msg.innerText = `عذراً، أنت بعيد عن القاعة بحوالي ${Math.round(distance)} متر.`;
+            msg.className = "status-box error";
+        }
+    }
+
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371e3; // قطر الأرض بالمتر
+        const phi1 = lat1 * Math.PI/180;
+        const phi2 = lat2 * Math.PI/180;
+        const dPhi = (lat2-lat1) * Math.PI/180;
+        const dLambda = (lon2-lon1) * Math.PI/180;
+
+        const a = Math.sin(dPhi/2) * Math.sin(dPhi/2) +
+                  Math.cos(phi1) * Math.cos(phi2) *
+                  Math.sin(dLambda/2) * Math.sin(dLambda/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+        return R * c; // المسافة بالمتر
+    }
+
+    function handleError(error) {
+        msg.className = "status-box error";
+        switch(error.code) {
+            case error.PERMISSION_DENIED: msg.innerText = "يجب السماح بالوصول للموقع لتسجيل الحضور."; break;
+            default: msg.innerText = "حدث خطأ في تحديد الموقع، حاول مجدداً."; break;
+        }
+    }
+
+    function submitAttendance() {
+        const id = document.getElementById('nationalID').value;
+        if (id.length === 14) {
+            alert("تم استلام الرقم القومي: " + id + "\nالخطوة القادمة هي الربط بـ Firebase.");
+        } else {
+            alert("يرجى إدخال رقم قومي صحيح (14 رقم).");
+        }
+    }
+</script>
+
+</body>
+</html>
