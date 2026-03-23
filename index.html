@@ -64,6 +64,9 @@
         const uLat = position.coords.latitude;
         const uLon = position.coords.longitude;
         
+        // سطر مؤقت لإظهار إحداثياتك الحالية في رسالة تنبيه
+        alert("إحداثياتك الحالية هي:\nLat: " + uLat + "\nLon: " + uLon);
+        
         const distance = calculateDistance(uLat, uLon, TARGET_LAT, TARGET_LON);
         
         if (distance <= RADIUS_METERS) {
