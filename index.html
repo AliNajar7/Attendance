@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام الحضور الذكي | إدارة المحاضرة</title>
+    <title>نظام الحضور الذكي | دكتور المحاضرة</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root { --primary: #2c3e50; --success: #27ae60; --danger: #e74c3c; --accent: #3498db; --warning: #f39c12; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; margin: 0; padding: 15px; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; }
         .card { background: white; padding: 2rem; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 500px; text-align: center; border-top: 6px solid var(--primary); }
-        h2 { color: var(--primary); margin-top: 0; }
-        .status-box { padding: 15px; border-radius: 12px; margin-bottom: 1.5rem; font-weight: bold; border: 1px solid #ddd; font-size: 0.95rem; }
-        input[type="number"], input[type="file"] { width: 100%; padding: 14px; margin: 10px 0; border: 2px solid #eee; border-radius: 10px; box-sizing: border-box; font-size: 1.1rem; text-align: center; }
-        button { width: 100%; padding: 14px; border: none; border-radius: 10px; font-size: 1.05rem; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; color: white; }
+        h2 { color: var(--primary); margin-top: 0; font-size: 1.4rem; }
+        .status-box { padding: 12px; border-radius: 12px; margin-bottom: 1rem; font-weight: bold; border: 1px solid #ddd; font-size: 0.9rem; }
+        input[type="number"], input[type="file"] { width: 100%; padding: 14px; margin: 10px 0; border: 2px solid #eee; border-radius: 10px; box-sizing: border-box; font-size: 1.1rem; text-align: center; outline: none; }
+        button { width: 100%; padding: 14px; border: none; border-radius: 10px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 8px; color: white; }
         .btn-check { background-color: var(--primary); }
         .btn-submit { background-color: var(--success); display: none; }
         .btn-export { background-color: var(--accent); width: auto; padding: 8px 15px; }
@@ -29,29 +29,28 @@
         table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.85rem; }
         th, td { border: 1px solid #eee; padding: 10px; text-align: center; }
         th { background: var(--primary); color: white; }
-        .upload-section, .control-section { border: 2px dashed #ddd; padding: 15px; margin: 15px 0; border-radius: 10px; background: #fafafa; }
+        .control-section, .upload-section { border: 2px dashed #ddd; padding: 15px; margin: 15px 0; border-radius: 10px; background: #fafafa; }
         
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); }
-        .modal-content { background: white; margin: 20% auto; padding: 20px; border-radius: 15px; width: 80%; max-width: 350px; text-align: center; }
-        
-        /* ستايل زر التبديل (Switch) */
-        .status-indicator { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-left: 8px; }
-        .status-open { background: var(--success); box-shadow: 0 0 8px var(--success); }
-        .status-closed { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
+        .modal-content { background: white; margin: 20% auto; padding: 20px; border-radius: 15px; width: 85%; max-width: 350px; text-align: center; }
+        .status-indicator { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-left: 5px; }
+        .status-open { background: var(--success); }
+        .status-closed { background: var(--danger); }
     </style>
 </head>
 <body>
 
 <div id="studentUI" class="card">
     <h2>نظام الحضور الذكي</h2>
-    <div id="registrationStatus" class="status-box">جاري التحقق من حالة الجلسة...</div>
+    <div id="regStatusDisplay" class="status-box">جاري التحميل...</div>
     
-    <div id="activeForm" style="display: none;">
+    <div id="interactionArea">
         <div id="msg" class="status-box">يرجى التحقق من موقعك بالقاعة أولاً</div>
         <button id="checkBtn" class="btn-check">1. التحقق من الموقع (GPS)</button>
+        
         <div id="attendanceForm" style="display: none;">
             <input type="number" id="nationalID" placeholder="أدخل الرقم القومي">
-            <button id="submitBtn" class="btn-submit">2. تسجيل الحضور الآن</button>
+            <button id="submitBtn" class="btn-submit">2. دخول / تسجيل الحضور</button>
         </div>
     </div>
 
@@ -67,10 +66,10 @@
         <h2 style="text-align: center;">لوحة تحكم المحاضر 👨‍🏫</h2>
         
         <div class="control-section">
-            <strong>⚙️ التحكم في جلسة الحضور:</strong>
-            <div id="adminStatusText" style="margin: 10px 0; font-weight: bold;">الحالة الحالية: ...</div>
-            <div style="display: flex; gap: 10px;">
-                <button id="openRegBtn" style="background: var(--success);">فتح التسجيل الآن</button>
+            <strong>⚙️ التحكم في الجلسة:</strong>
+            <div id="adminStatusText" style="margin: 8px 0; font-weight: bold;">الحالة: ...</div>
+            <div style="display: flex; gap: 8px;">
+                <button id="openRegBtn" style="background: var(--success);">فتح التسجيل</button>
                 <button id="closeRegBtn" style="background: var(--danger);">إغلاق التسجيل</button>
             </div>
         </div>
@@ -78,21 +77,19 @@
         <div class="upload-section">
             <strong>📦 رفع كشف الطلاب (Excel):</strong>
             <input type="file" id="excelFile" accept=".xlsx, .xls">
-            <button id="uploadBtn" class="btn-upload">بدء الرفع الجماعي</button>
+            <button id="uploadBtn" class="btn-upload">رفع القائمة</button>
         </div>
 
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <strong>📊 الكشف الحالي:</strong>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top:15px;">
+            <strong>📊 الكشف:</strong>
             <button id="exportBtn" class="btn-export">تصدير Excel</button>
         </div>
         <table id="attendanceTable">
-            <thead>
-                <tr><th>الاسم</th><th>الرقم القومي</th><th>التوقيت</th></tr>
-            </thead>
+            <thead><tr><th>الاسم</th><th>الرقم القومي</th><th>التوقيت</th></tr></thead>
             <tbody id="tableBody"></tbody>
         </table>
         <button id="clearAllBtn" class="btn-clear">🗑️ مسح السجلات</button>
-        <button onclick="location.reload()" style="background:#95a5a6; margin-top:10px;">تسجيل الخروج</button>
+        <button onclick="location.reload()" style="background:#95a5a6; margin-top:8px;">خروج</button>
     </div>
 </div>
 
@@ -114,75 +111,61 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    const ADMIN_ID = "29112063100031"; // *** رقمك القومي ***
+    // ==========================================
+    const ADMIN_ID = "12345678901234"; // *** ضع رقمك القومي هنا ***
     const TARGET_LAT = 26.7307244; 
     const TARGET_LON = 33.9358019; 
     const RADIUS_METERS = 100;
+    // ==========================================
 
-    const regStatusBox = document.getElementById('registrationStatus');
-    const activeForm = document.getElementById('activeForm');
+    let isRegOpen = false;
+    const regStatusDisplay = document.getElementById('regStatusDisplay');
 
-    // 1. مراقبة حالة التسجيل (مفتوح/مغلق) لحظياً
+    // 1. مراقبة حالة التسجيل لحظياً
     onSnapshot(doc(db, "Settings", "session"), (docSnap) => {
-        if (docSnap.exists()) {
-            const isOpen = docSnap.data().isRegistrationOpen;
-            if (isOpen) {
-                regStatusBox.innerHTML = '<span class="status-indicator status-open"></span> التسجيل متاح الآن';
-                regStatusBox.className = "status-box success";
-                activeForm.style.display = "block";
-            } else {
-                regStatusBox.innerHTML = '<span class="status-indicator status-closed"></span> تسجيل الحضور مغلق حالياً';
-                regStatusBox.className = "status-box error";
-                activeForm.style.display = "none";
-            }
-            // تحديث نص المدير إذا كان داخل لوحة التحكم
-            const adminStatusText = document.getElementById('adminStatusText');
-            adminStatusText.innerHTML = `الحالة الحالية: ${isOpen ? '<span style="color:green">مفتوح</span>' : '<span style="color:red">مغلق</span>'}`;
+        isRegOpen = docSnap.exists() ? docSnap.data().isRegistrationOpen : false;
+        if (isRegOpen) {
+            regStatusDisplay.innerHTML = '<span class="status-indicator status-open"></span> متاح الآن للطلاب';
+            regStatusDisplay.className = "status-box success";
         } else {
-            // إنشاء الوثيقة لأول مرة إذا لم تكن موجودة
-            setDoc(doc(db, "Settings", "session"), { isRegistrationOpen: false });
+            regStatusDisplay.innerHTML = '<span class="status-indicator status-closed"></span> مغلق (متاح للمدير فقط)';
+            regStatusDisplay.className = "status-box error";
         }
+        const adminStat = document.getElementById('adminStatusText');
+        if(adminStat) adminStat.innerHTML = `الحالة: ${isRegOpen ? '<span style="color:green">مفتوح</span>' : '<span style="color:red">مغلق</span>'}`;
     });
 
-    // 2. دوام المدير للتحكم في الجلسة
-    document.getElementById('openRegBtn').onclick = async () => {
-        await setDoc(doc(db, "Settings", "session"), { isRegistrationOpen: true });
-    };
-    document.getElementById('closeRegBtn').onclick = async () => {
-        await setDoc(doc(db, "Settings", "session"), { isRegistrationOpen: false });
-    };
-
-    // بقية الوظائف البرمجية (الموقع، التسجيل، الإكسيل) كما هي
-    const msg = document.getElementById('msg');
     const checkBtn = document.getElementById('checkBtn');
     const form = document.getElementById('attendanceForm');
     const submitBtn = document.getElementById('submitBtn');
-    const resultDisplay = document.getElementById('resultDisplay');
-    const displayStudentName = document.getElementById('displayStudentName');
+    const msg = document.getElementById('msg');
 
     window.showCustomMsg = (text) => { document.getElementById('modalMsg').innerText = text; document.getElementById('myModal').style.display = "block"; };
     window.closeModal = () => document.getElementById('myModal').style.display = "none";
 
+    // التحقق من الموقع (متاح دائماً للمدير والطلاب)
     checkBtn.onclick = () => {
         navigator.geolocation.getCurrentPosition((pos) => {
             const dist = calculateDistance(pos.coords.latitude, pos.coords.longitude, TARGET_LAT, TARGET_LON);
             if (dist <= RADIUS_METERS) {
-                msg.innerText = "تم التحقق من الموقع ✅";
-                msg.className = "status-box success";
-                checkBtn.style.display = "none";
-                form.style.display = "block";
-                submitBtn.style.display = "block";
+                msg.innerText = "الموقع سليم ✅"; msg.className = "status-box success";
+                checkBtn.style.display = "none"; form.style.display = "block"; submitBtn.style.display = "block";
             } else {
-                msg.innerText = `خارج النطاق المسموح ❌`;
-                msg.className = "status-box error";
+                msg.innerText = `بعيد بمسافة ${Math.round(dist)} متر ❌`; msg.className = "status-box error";
             }
-        }, () => showCustomMsg("يرجى تفعيل الـ GPS"));
+        }, () => showCustomMsg("يرجى تفعيل GPS"));
     };
 
     submitBtn.onclick = async () => {
         const idValue = document.getElementById('nationalID').value.trim();
+        
+        // أ. دخول المدير (مستثنى من شرط الإغلاق)
         if (idValue === ADMIN_ID) { loadAdminPanel(); return; }
-        if (idValue.length !== 14) return showCustomMsg("الرقم القومي غير صحيح");
+
+        // ب. فحص هل التسجيل مفتوح للطلاب؟
+        if (!isRegOpen) { showCustomMsg("عذراً، المحاضر أغلق تسجيل الحضور حالياً."); return; }
+
+        if (idValue.length !== 14) return showCustomMsg("الرقم القومي ناقص");
 
         try {
             submitBtn.disabled = true;
@@ -190,16 +173,19 @@
             if (studentSnap.exists()) {
                 const sName = studentSnap.data().name;
                 await addDoc(collection(db, "Attendance"), { nationalID: idValue, name: sName, timestamp: serverTimestamp() });
-                activeForm.style.display = "none";
-                regStatusBox.style.display = "none";
-                displayStudentName.innerText = sName;
-                resultDisplay.style.display = "block";
+                document.getElementById('interactionArea').style.display = "none";
+                regStatusDisplay.style.display = "none";
+                document.getElementById('displayStudentName').innerText = sName;
+                document.getElementById('resultDisplay').style.display = "block";
             } else {
-                showCustomMsg("الرقم غير مسجل!");
-                submitBtn.disabled = false;
+                showCustomMsg("الرقم غير مسجل بالكشوف!"); submitBtn.disabled = false;
             }
         } catch (e) { showCustomMsg("خطأ اتصال"); submitBtn.disabled = false; }
     };
+
+    // وظائف المدير
+    document.getElementById('openRegBtn').onclick = () => setDoc(doc(db, "Settings", "session"), { isRegistrationOpen: true });
+    document.getElementById('closeRegBtn').onclick = () => setDoc(doc(db, "Settings", "session"), { isRegistrationOpen: false });
 
     async function loadAdminPanel() {
         document.getElementById('studentUI').style.display = 'none';
@@ -229,24 +215,21 @@
                 const name = row.Name || row.name || row["الاسم"];
                 if(id && name) batch.set(doc(db, "StudentsList", String(id).trim()), { name: String(name).trim() });
             });
-            await batch.commit();
-            showCustomMsg("تم رفع القائمة بنجاح");
+            await batch.commit(); showCustomMsg("تم الرفع بنجاح");
         };
         reader.readAsArrayBuffer(file);
     };
 
     document.getElementById('exportBtn').onclick = () => {
-        const wb = XLSX.utils.table_to_book(document.getElementById("attendanceTable"));
-        XLSX.writeFile(wb, "حضور_المحاضرة.xlsx");
+        XLSX.writeFile(XLSX.utils.table_to_book(document.getElementById("attendanceTable")), "الحضور.xlsx");
     };
 
     document.getElementById('clearAllBtn').onclick = async () => {
-        if (!confirm("حذف كل السجلات؟")) return;
+        if (!confirm("مسح السجلات؟")) return;
         const snap = await getDocs(collection(db, "Attendance"));
         const batch = writeBatch(db);
         snap.forEach(d => batch.delete(d.ref));
-        await batch.commit();
-        loadAdminPanel();
+        await batch.commit(); loadAdminPanel();
     };
 
     function calculateDistance(lat1, lon1, lat2, lon2) {
